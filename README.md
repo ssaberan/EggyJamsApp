@@ -15,9 +15,17 @@ Grab the latest version from the [**Releases page**](https://github.com/ssaberan
 - **macOS** — `EggyJams-mac.zip`
 - **Linux** — `EggyJams-linux.AppImage`
 
-On Windows and Mac, unzip the download and double-click the EggyJams app to start. Because the app
-is new, your computer may show an "unknown developer" warning the first time — it's safe to
-continue (on Windows click *More info → Run anyway*; on Mac right-click the app and choose *Open*).
+On Windows and Mac, unzip the download and double-click the EggyJams app to start.
+
+Because the app is new and isn't registered with Apple or Microsoft yet, your computer may warn you
+the first time you open it. It's safe to continue:
+
+- **Windows** — if you see *"Windows protected your PC"*, click *More info → Run anyway*.
+- **macOS** — recent macOS versions no longer offer "Open" from the warning dialog. Instead, after
+  the *"cannot be opened because the developer cannot be verified"* message appears, open
+  *System Settings → Privacy & Security*, scroll to the *Security* section, and click *Open Anyway*
+  next to EggyJams (then confirm with *Open*). You only need to do this once. Advanced users can
+  instead run `xattr -dr com.apple.quarantine /path/to/EggyJams.app` in Terminal.
 
 ## What you can make
 
