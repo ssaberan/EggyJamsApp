@@ -1,0 +1,101 @@
+@import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
+
+/* Class-based dark mode (toggle-controlled) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Selected edge highlight ── */
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #818cf8 !important;
+  stroke-width: 3px;
+}
+
+.react-flow__edge.selected .react-flow__edge-path + marker path {
+  fill: #818cf8;
+}
+
+/* Override the marker color for selected edges */
+.react-flow__edge.selected marker path {
+  fill: #818cf8 !important;
+}
+
+/* Hover hint on edges */
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: #a5b4fc;
+  cursor: pointer;
+}
+
+/* ── Cutscene animations ── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(60px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Hide number input spinners (arrows) */
+.input-no-spinner::-webkit-inner-spin-button,
+.input-no-spinner::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.input-no-spinner {
+  -moz-appearance: textfield;
+}
+
+/* ── Cutscene timeline overrides ── */
+/* Add horizontal separator lines between timeline rows */
+.cutscene-timeline-container .timeline-editor-edit-row {
+  border-bottom: 1px solid rgba(107, 114, 128, 0.5);
+}
+
+/* ── Electron desktop polish ── */
+html.electron-app,
+html.electron-app body,
+html.electron-app #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+.electron-shell {
+  display: flex;
+  height: 100dvh;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.electron-shell-content {
+  position: relative;
+  min-height: 0;
+  flex: 1 1 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+html.immersive-play .electron-shell-content {
+  overflow: hidden;
+}
+
+.electron-app button,
+.electron-app a,
+.electron-app [role="button"],
+.electron-app label[for],
+.electron-app summary,
+.electron-app .cursor-pointer {
+  cursor: pointer;
+}
+
+.electron-app .transition-colors,
+.electron-app .transition-all {
+  transition-duration: 75ms;
+}
+
+.electron-titlebar {
+  -webkit-app-region: drag;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+

@@ -1,0 +1,46 @@
+{
+  "name": "eggyjams-game-player",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Standalone player shell for exported EggyJams games.",
+  "type": "commonjs",
+  "main": "dist-electron/main.js",
+  "author": "EggyJams",
+  "build": {
+    "appId": "com.eggyjams.gameplayer",
+    "productName": "EggyJams Game",
+    "electronVersion": "34.5.8",
+    "icon": "../public/logo.png",
+    "directories": {
+      "output": "../game-player-shells",
+      "buildResources": "../build"
+    },
+    "files": [
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "game",
+        "to": "game",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        "dir"
+      ],
+      "signAndEditExecutable": false
+    },
+    "mac": {
+      "target": [
+        "dir"
+      ],
+      "category": "public.app-category.games",
+      "identity": null
+    }
+  }
+}
