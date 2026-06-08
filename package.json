@@ -21,6 +21,7 @@
     "dist": "npm run build && cross-env ALLOW_ELECTRON_BUILDER_AS_PRODUCTION_DEPENDENCY=true electron-builder",
     "electron:dist": "npm run dist",
     "dist:win:zip": "npm run build && cross-env ALLOW_ELECTRON_BUILDER_AS_PRODUCTION_DEPENDENCY=true electron-builder --win zip",
+    "dist:mac": "npm run build && cross-env ALLOW_ELECTRON_BUILDER_AS_PRODUCTION_DEPENDENCY=true electron-builder --mac dmg",
     "dist:mac:zip": "npm run build && cross-env ALLOW_ELECTRON_BUILDER_AS_PRODUCTION_DEPENDENCY=true electron-builder --mac zip"
   },
   "build": {
@@ -73,6 +74,27 @@
       ],
       "category": "public.app-category.games",
       "artifactName": "EggyJams-mac.${ext}"
+    },
+    "dmg": {
+      "background": "build/dmg-background.png",
+      "iconSize": 100,
+      "window": {
+        "width": 540,
+        "height": 380
+      },
+      "contents": [
+        {
+          "x": 150,
+          "y": 188,
+          "type": "file"
+        },
+        {
+          "x": 390,
+          "y": 188,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
     }
   },
   "dependencies": {

@@ -12,12 +12,21 @@ to start creating.
 Grab the latest version from the [**Releases page**](https://github.com/ssaberan/EggyJamsApp/releases/latest):
 
 - **Windows** — `EggyJams-windows.zip`
-- **macOS** — `EggyJams-mac.zip`
+- **macOS** — `EggyJams-mac.dmg`
 - **Linux** — `EggyJams-linux.AppImage`
 
-On Windows and Mac, unzip the download and double-click the EggyJams app to start. Because the app
-is new, your computer may show an "unknown developer" warning the first time — it's safe to
-continue (on Windows click *More info → Run anyway*; on Mac right-click the app and choose *Open*).
+On macOS, open the `.dmg` and drag EggyJams into your Applications folder. On Windows, unzip the
+download and double-click the EggyJams app.
+
+Because the app is new and isn't registered with Apple or Microsoft yet, your computer may warn you
+the first time you open it. It's safe to continue:
+
+- **Windows** — if you see *"Windows protected your PC"*, click *More info → Run anyway*.
+- **macOS** — recent macOS versions no longer offer "Open" from the warning dialog. Instead, after
+  the *"cannot be opened because the developer cannot be verified"* message appears, open
+  *System Settings → Privacy & Security*, scroll to the *Security* section, and click *Open Anyway*
+  next to EggyJams (then confirm with *Open*). You only need to do this once. Advanced users can
+  instead run `xattr -dr com.apple.quarantine /Applications/EggyJams.app` in Terminal.
 
 ## What you can make
 
@@ -99,7 +108,7 @@ After changing files under `electron/`, restart the dev command.
 | `npm run electron:dev` | `npm run desktop:dev` | Build Electron main, start Vite, open the app |
 | `npm run dist` | `npm run desktop:dist` | Build the Linux AppImage (and host-OS installers) into `desktop-app/release/` |
 | `npm run dist:win:zip` | `npm run desktop:dist:win` | Windows portable `.zip` |
-| `npm run dist:mac:zip` | `npm run desktop:dist:mac` | macOS `.zip` |
+| `npm run dist:mac` | `npm run desktop:dist:mac` | macOS `.dmg` |
 | `npm run build:game-player:win` | `npm run desktop:shells:win` | Build the Windows player shell |
 | `npm run build:game-player:mac` | `npm run desktop:shells:mac` | Build the macOS player shell |
 | `npm run lint` | — | ESLint |
@@ -111,8 +120,10 @@ npm run desktop:dist        # from repo root  (artifacts in desktop-app/release/
 ```
 
 Packaged artifacts depend on the OS you build on. The released downloads use the version-less names
-`EggyJams-windows.zip`, `EggyJams-mac.zip`, and `EggyJams-linux.AppImage` (configured via
-`artifactName` in `package.json`) so the website's download links stay stable across releases. See
+`EggyJams-windows.zip`, `EggyJams-mac.dmg`, and `EggyJams-linux.AppImage` (configured via
+`artifactName` in `package.json`) so the website's download links stay stable across releases. The
+macOS `.dmg` ships with an instructional background (`build/dmg-background.png`) that shows users how
+to drag the app to Applications and get past the first-launch Gatekeeper warning. See
 [electron-builder](https://www.electron.build/) for cross-compilation requirements.
 
 Executable game exports rely on pre-built player shells in `game-player-shells/`. Build them first:
