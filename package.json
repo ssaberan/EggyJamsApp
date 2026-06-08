@@ -1,0 +1,116 @@
+{
+  "name": "eggyjams",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "dist-electron/main.js",
+  "author": "EggyJams",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build && vite build -c vite.runner.config.ts && npm run build:electron",
+    "build:electron": "tsc -p tsconfig.electron.json && node -e \"require('fs').writeFileSync('dist-electron/package.json', JSON.stringify({ type: 'commonjs' }))\"",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "electron:dev": "npm run build:electron && concurrently -k \"vite\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
+    "electron:dev:main": "npm run build:electron",
+    "electron:build": "npm run build && cross-env NODE_ENV=production electron .",
+    "build:game-player:main": "tsc -p game-player/tsconfig.json",
+    "build:game-player": "npm run build:game-player:main && electron-builder --projectDir game-player --dir",
+    "build:game-player:win": "npm run build:game-player:main && electron-builder --projectDir game-player --win dir",
+    "build:game-player:mac": "npm run build:game-player:main && electron-builder --projectDir game-player --mac dir",
+    "dist": "npm run build && cross-env ALLOW_ELECTRON_BUILDER_AS_PRODUCTION_DEPENDENCY=true electron-builder",
+    "electron:dist": "npm run dist",
+    "dist:win:zip": "npm run build && cross-env ALLOW_ELECTRON_BUILDER_AS_PRODUCTION_DEPENDENCY=true electron-builder --win zip",
+    "dist:mac:zip": "npm run build && cross-env ALLOW_ELECTRON_BUILDER_AS_PRODUCTION_DEPENDENCY=true electron-builder --mac zip"
+  },
+  "build": {
+    "appId": "com.eggyjams.app",
+    "productName": "EggyJams",
+    "icon": "public/logo.png",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "!**/*",
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json",
+      "node_modules/**/*"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "**/*.wasm",
+      "**/assets/worker-*.js",
+      "**/assets/magic_webp-*.js"
+    ],
+    "extraResources": [
+      {
+        "from": "game-player-shells",
+        "to": "game-player-shells",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Game",
+      "artifactName": "EggyJams-linux.${ext}"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "signAndEditExecutable": false,
+      "artifactName": "EggyJams-windows.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.games",
+      "artifactName": "EggyJams-mac.${ext}"
+    }
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.18",
+    "@tweenjs/tween.js": "^25.0.0",
+    "@types/file-saver": "^2.0.7",
+    "@xyflow/react": "^12.10.0",
+    "@xzdarcy/react-timeline-editor": "^1.0.0",
+    "clsx": "^2.1.1",
+    "electron-builder": "^25.1.8",
+    "file-saver": "^2.0.5",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.563.0",
+    "magic-webp": "^1.0.11",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.13.0",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss": "^4.1.18",
+    "zundo": "^2.3.0",
+    "zustand": "^5.0.11"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.19.19",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^34.2.0",
+    "eslint": "^9.17.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "globals": "^15.14.0",
+    "typescript": "~5.6.2",
+    "typescript-eslint": "^8.18.2",
+    "vite": "^6.0.5",
+    "wait-on": "^8.0.2"
+  }
+}
