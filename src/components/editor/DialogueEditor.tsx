@@ -591,7 +591,8 @@ function TextBlockCard({ block, index, total, onUpdate, onRemove, onMove }: Text
                   </select>
 
                   <AssetPicker
-                    category="Character"
+                    kind="image"
+                    assetLabel="sprite"
                     value={slot.spriteId}
                     onChange={(assetId) => updateCharacterSlot(slotIdx, { spriteId: assetId })}
                     compact

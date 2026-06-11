@@ -39,21 +39,37 @@ export interface ProjectRegistryEntry {
 
 export type AssetFileType = 'image' | 'audio'
 
-export type AssetCategory = 'Background' | 'Character' | 'BGM' | 'SFX' | 'Prop'
+export interface AssetFolder {
+  id: string
+  name: string
+  parentId: string | null
+  createdAt?: string
+}
 
 export interface AssetRecord {
   id: string
   fileName: string
   relativePath: string
   fileType: AssetFileType
-  category: AssetCategory
+  folderId: string | null
   createdAt?: string
 }
 
-export type AssetManifest = AssetRecord[]
+/** v2 `assets/manifest.json` shape. Legacy (v1) manifests were a bare AssetRecord[] with a `category` field. */
+export interface AssetManifest {
+  version: 2
+  folders: AssetFolder[]
+  assets: AssetRecord[]
+}
 
 export interface ListedAsset extends AssetRecord {
   fileUrl: string
+}
+
+/** Payload returned by `asset:list`: full library (folder tree + assets). */
+export interface AssetLibrary {
+  folders: AssetFolder[]
+  assets: ListedAsset[]
 }
 
 export type GameVariables = Record<string, boolean | number | string>

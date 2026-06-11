@@ -2,7 +2,6 @@ import type { AssetRepository } from './AssetRepository';
 import type { PreferencesRepository } from './PreferencesRepository';
 import type { ProjectRepository } from './ProjectRepository';
 import type { SaveRepository } from './SaveRepository';
-import type { AssetCategory } from './types';
 
 function api() {
   const electron = window.electronAPI;
@@ -33,18 +32,26 @@ export const electronAssetRepository: AssetRepository = {
   uploadAsset: async (
     projectId: string,
     file: File,
-    category: AssetCategory,
+    folderId?: string | null,
   ) => {
     const buffer = await file.arrayBuffer();
     return api().uploadAsset({
       projectId,
       fileName: file.name,
-      category,
+      folderId: folderId ?? null,
       buffer,
     });
   },
   deleteAsset: (projectId, assetId) =>
     api().deleteAsset(projectId, assetId),
+  moveAsset: (projectId, assetId, folderId) =>
+    api().moveAsset(projectId, assetId, folderId),
+  createFolder: (projectId, name, parentId) =>
+    api().createAssetFolder(projectId, name, parentId),
+  renameFolder: (projectId, folderId, name) =>
+    api().renameAssetFolder(projectId, folderId, name),
+  deleteFolder: (projectId, folderId) =>
+    api().deleteAssetFolder(projectId, folderId),
   getAssetUrl: (projectId, assetId) =>
     api().getAssetUrl(projectId, assetId),
 };

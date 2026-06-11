@@ -5,8 +5,9 @@ import path from 'node:path'
 
 import type {
   AppPreferences,
-  AssetCategory,
   AssetFileType,
+  AssetFolder,
+  AssetLibrary,
   AssetManifest,
   AssetRecord,
   ListedAsset,
@@ -110,7 +111,7 @@ async function ensureProjectScaffold(projectDir: string): Promise<void> {
   try {
     await fs.access(manifest)
   } catch {
-    await writeJson(manifest, [] satisfies AssetManifest)
+    await writeJson(manifest, emptyManifest())
   }
 }
 
@@ -136,8 +137,77 @@ export function projectThumbnailUrl(projectId: string): string {
   return `eggyjams://${projectId}/${THUMBNAIL_ASSET_ID}`
 }
 
+function emptyManifest(): AssetManifest {
+  return { version: 2, folders: [], assets: [] }
+}
+
+/** Legacy (v1) manifest entry: a bare array of records with a category. */
+interface LegacyAssetRecord {
+  id: string
+  fileName: string
+  relativePath: string
+  fileType: AssetFileType
+  category?: string
+  createdAt?: string
+}
+
+const LEGACY_CATEGORY_FOLDERS: Record<string, string> = {
+  Character: 'Characters',
+  Background: 'Backgrounds',
+  Prop: 'Props',
+  BGM: 'Audio',
+  SFX: 'Audio',
+}
+
+/** Convert a v1 manifest (flat array with categories) into v2 folders + assets. */
+function migrateLegacyManifest(records: LegacyAssetRecord[]): AssetManifest {
+  const now = new Date().toISOString()
+  const foldersByName = new Map<string, AssetFolder>()
+
+  const assets: AssetRecord[] = records.map((record) => {
+    const folderName = record.category
+      ? LEGACY_CATEGORY_FOLDERS[record.category]
+      : undefined
+
+    let folderId: string | null = null
+    if (folderName) {
+      let folder = foldersByName.get(folderName)
+      if (!folder) {
+        folder = { id: randomUUID(), name: folderName, parentId: null, createdAt: now }
+        foldersByName.set(folderName, folder)
+      }
+      folderId = folder.id
+    }
+
+    return {
+      id: record.id,
+      fileName: record.fileName,
+      relativePath: record.relativePath,
+      fileType: record.fileType,
+      folderId,
+      createdAt: record.createdAt,
+    }
+  })
+
+  return { version: 2, folders: [...foldersByName.values()], assets }
+}
+
 async function readManifest(projectDir: string): Promise<AssetManifest> {
-  return readJson<AssetManifest>(manifestPath(projectDir), [])
+  const raw = await readJson<unknown>(manifestPath(projectDir), null)
+  if (raw === null) return emptyManifest()
+
+  if (Array.isArray(raw)) {
+    const migrated = migrateLegacyManifest(raw as LegacyAssetRecord[])
+    await writeManifest(projectDir, migrated)
+    return migrated
+  }
+
+  const manifest = raw as Partial<AssetManifest>
+  return {
+    version: 2,
+    folders: manifest.folders ?? [],
+    assets: manifest.assets ?? [],
+  }
 }
 
 async function writeManifest(
@@ -387,23 +457,26 @@ export async function saveProjectAs(
   return updated
 }
 
-export async function listAssets(projectId: string): Promise<ListedAsset[]> {
+export async function listAssets(projectId: string): Promise<AssetLibrary> {
   const projectDir = await getProjectDir(projectId)
-  if (!projectDir) return []
+  if (!projectDir) return { folders: [], assets: [] }
 
   const manifest = await readManifest(projectDir)
-  return manifest.map((record) => toListedAsset(projectId, record))
+  return {
+    folders: manifest.folders,
+    assets: manifest.assets.map((record) => toListedAsset(projectId, record)),
+  }
 }
 
 export interface UploadAssetPayload {
   projectId: string
   fileName: string
-  category: AssetCategory
+  folderId?: string | null
   buffer: ArrayBuffer
 }
 
 export async function uploadAsset(payload: UploadAssetPayload): Promise<string> {
-  const { projectId, fileName, category, buffer } = payload
+  const { projectId, fileName, folderId, buffer } = payload
   const projectDir = await getProjectDir(projectId)
   if (!projectDir) {
     throw new Error(`Project not found: ${projectId}`)
@@ -424,17 +497,22 @@ export async function uploadAsset(payload: UploadAssetPayload): Promise<string> 
 
   await fs.writeFile(absolutePath, Buffer.from(buffer))
 
+  const manifest = await readManifest(projectDir)
+
   const record: AssetRecord = {
     id: assetId,
     fileName,
     relativePath,
     fileType,
-    category,
+    // Guard against stale folder ids so assets never become invisible orphans.
+    folderId:
+      folderId && manifest.folders.some((f) => f.id === folderId)
+        ? folderId
+        : null,
     createdAt: new Date().toISOString(),
   }
 
-  const manifest = await readManifest(projectDir)
-  manifest.unshift(record)
+  manifest.assets.unshift(record)
   await writeManifest(projectDir, manifest)
 
   const registry = await readRegistry()
@@ -455,16 +533,114 @@ export async function deleteAsset(
   if (!projectDir) return
 
   const manifest = await readManifest(projectDir)
-  const record = manifest.find((a) => a.id === assetId)
+  const record = manifest.assets.find((a) => a.id === assetId)
   if (!record) return
 
   const absolutePath = path.join(projectDir, record.relativePath)
   await fs.rm(absolutePath, { force: true })
 
-  await writeManifest(
-    projectDir,
-    manifest.filter((a) => a.id !== assetId),
-  )
+  await writeManifest(projectDir, {
+    ...manifest,
+    assets: manifest.assets.filter((a) => a.id !== assetId),
+  })
+}
+
+export async function moveAsset(
+  projectId: string,
+  assetId: string,
+  folderId: string | null,
+): Promise<void> {
+  const projectDir = await getProjectDir(projectId)
+  if (!projectDir) {
+    throw new Error(`Project not found: ${projectId}`)
+  }
+
+  const manifest = await readManifest(projectDir)
+  const record = manifest.assets.find((a) => a.id === assetId)
+  if (!record) {
+    throw new Error(`Asset not found: ${assetId}`)
+  }
+  if (folderId && !manifest.folders.some((f) => f.id === folderId)) {
+    throw new Error(`Folder not found: ${folderId}`)
+  }
+
+  record.folderId = folderId
+  await writeManifest(projectDir, manifest)
+}
+
+export async function createAssetFolder(
+  projectId: string,
+  name: string,
+  parentId: string | null,
+): Promise<AssetFolder> {
+  const projectDir = await getProjectDir(projectId)
+  if (!projectDir) {
+    throw new Error(`Project not found: ${projectId}`)
+  }
+
+  const manifest = await readManifest(projectDir)
+  if (parentId && !manifest.folders.some((f) => f.id === parentId)) {
+    throw new Error(`Parent folder not found: ${parentId}`)
+  }
+
+  const folder: AssetFolder = {
+    id: randomUUID(),
+    name: name.trim() || 'New Folder',
+    parentId,
+    createdAt: new Date().toISOString(),
+  }
+
+  manifest.folders.push(folder)
+  await writeManifest(projectDir, manifest)
+  return folder
+}
+
+export async function renameAssetFolder(
+  projectId: string,
+  folderId: string,
+  name: string,
+): Promise<void> {
+  const projectDir = await getProjectDir(projectId)
+  if (!projectDir) {
+    throw new Error(`Project not found: ${projectId}`)
+  }
+
+  const manifest = await readManifest(projectDir)
+  const folder = manifest.folders.find((f) => f.id === folderId)
+  if (!folder) {
+    throw new Error(`Folder not found: ${folderId}`)
+  }
+
+  const trimmed = name.trim()
+  if (!trimmed) return
+
+  folder.name = trimmed
+  await writeManifest(projectDir, manifest)
+}
+
+/** Delete a folder. Its assets and subfolders move up to the deleted folder's parent. */
+export async function deleteAssetFolder(
+  projectId: string,
+  folderId: string,
+): Promise<void> {
+  const projectDir = await getProjectDir(projectId)
+  if (!projectDir) return
+
+  const manifest = await readManifest(projectDir)
+  const folder = manifest.folders.find((f) => f.id === folderId)
+  if (!folder) return
+
+  for (const asset of manifest.assets) {
+    if (asset.folderId === folderId) asset.folderId = folder.parentId
+  }
+  for (const child of manifest.folders) {
+    if (child.parentId === folderId) child.parentId = folder.parentId
+  }
+
+  await writeManifest(projectDir, {
+    ...manifest,
+    folders: manifest.folders.filter((f) => f.id !== folderId),
+  })
 }
 
 export async function getAssetUrl(
@@ -477,7 +653,7 @@ export async function getAssetUrl(
   }
 
   const manifest = await readManifest(projectDir)
-  if (!manifest.some((a) => a.id === assetId)) {
+  if (!manifest.assets.some((a) => a.id === assetId)) {
     throw new Error(`Asset not found: ${assetId}`)
   }
 
@@ -653,7 +829,7 @@ export async function resolveAssetFilePath(url: string): Promise<string | null> 
   }
 
   const manifest = await readManifest(projectDir)
-  const record = manifest.find((a) => a.id === assetId)
+  const record = manifest.assets.find((a) => a.id === assetId)
   if (!record) return null
 
   const absolutePath = path.resolve(projectDir, record.relativePath)

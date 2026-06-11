@@ -48,23 +48,40 @@ export interface ProjectRegistryEntry {
 
 export type AssetFileType = 'image' | 'audio';
 
-export type AssetCategory = 'Background' | 'Character' | 'BGM' | 'SFX' | 'Prop';
+/** Virtual folder in the asset library (manifest-only; files on disk stay flat). */
+export interface AssetFolder {
+  id: string;
+  name: string;
+  parentId: string | null;
+  createdAt?: string;
+}
 
-/** Single row in `assets/manifest.json`. */
+/** Single asset row in `assets/manifest.json`. */
 export interface AssetRecord {
   id: string;
   fileName: string;
   relativePath: string;
   fileType: AssetFileType;
-  category: AssetCategory;
+  folderId: string | null;
   createdAt?: string;
 }
 
-export type AssetManifest = AssetRecord[];
+/** v2 `assets/manifest.json` shape. */
+export interface AssetManifest {
+  version: 2;
+  folders: AssetFolder[];
+  assets: AssetRecord[];
+}
 
 /** Asset metadata plus a URL suitable for `<img>` / `<audio>` (custom protocol in Electron). */
 export interface ListedAsset extends AssetRecord {
   fileUrl: string;
+}
+
+/** Full asset library: folder tree plus listed assets. */
+export interface AssetLibrary {
+  folders: AssetFolder[];
+  assets: ListedAsset[];
 }
 
 // ── Player saves ──

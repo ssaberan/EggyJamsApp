@@ -423,7 +423,8 @@ export default function PointAndClickEditor({ nodeId }: PointAndClickEditorProps
 
         <div className="ml-auto flex items-center gap-2">
           <AssetPicker
-            category="Background"
+            kind="image"
+            assetLabel="background"
             value={nodeData?.backgroundImageId ?? null}
             onChange={(assetId) => updateNodeData(nodeId, { backgroundImageId: assetId })}
             label="Background"

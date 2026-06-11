@@ -248,7 +248,7 @@ export function evaluateCondition(
 }
 
 async function buildAssetMap(projectId: string): Promise<Record<string, string>> {
-  const listed = await assetRepository.listAssets(projectId);
+  const { assets: listed } = await assetRepository.listAssets(projectId);
   const entries = await Promise.all(
     listed.map(async (asset) => {
       const url = await assetRepository.getAssetUrl(projectId, asset.id);

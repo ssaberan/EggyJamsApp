@@ -1,14 +1,14 @@
 import { create } from 'zustand';
 import { assetRepository } from '../storage';
-import type { ListedAsset } from '../storage';
+import type { AssetFolder, ListedAsset } from '../storage';
 import { setUrlFileType } from '../lib/assetPreloader';
 import { convertToWebpIfBeneficial } from '../utils/imageConversion';
 
 // ── Types ──
 
 export type AssetFileType = 'image' | 'audio';
-export type AssetCategory = 'Background' | 'Character' | 'BGM' | 'SFX' | 'Prop';
-export type FilterCategory = 'All' | 'Characters' | 'Backgrounds' | 'Audio' | 'Props';
+
+export type { AssetFolder };
 
 export interface Asset {
   id: string;
@@ -17,8 +17,13 @@ export interface Asset {
   file_name: string;
   file_url: string;
   file_type: AssetFileType;
-  category: AssetCategory;
+  folder_id: string | null;
   created_at: string;
+}
+
+export interface UploadProgress {
+  done: number;
+  total: number;
 }
 
 // ── Helpers ──
@@ -50,6 +55,24 @@ export function validateFile(file: File): string | null {
   return null;
 }
 
+/** Human-readable folder path like "Characters / Heroes" (empty string for root). */
+export function getFolderPath(
+  folders: AssetFolder[],
+  folderId: string | null,
+): string {
+  const parts: string[] = [];
+  const visited = new Set<string>();
+  let current = folderId;
+  while (current && !visited.has(current)) {
+    visited.add(current);
+    const folder = folders.find((f) => f.id === current);
+    if (!folder) break;
+    parts.unshift(folder.name);
+    current = folder.parentId;
+  }
+  return parts.join(' / ');
+}
+
 function listedToAsset(listed: ListedAsset, projectId: string): Asset {
   setUrlFileType(listed.fileUrl, listed.fileType);
   return {
@@ -59,19 +82,9 @@ function listedToAsset(listed: ListedAsset, projectId: string): Asset {
     file_name: listed.fileName,
     file_url: listed.fileUrl,
     file_type: listed.fileType,
-    category: listed.category,
+    folder_id: listed.folderId,
     created_at: listed.createdAt ?? new Date().toISOString(),
   };
-}
-
-/** Map the UI filter tabs to asset categories */
-function filterMatches(asset: Asset, filter: FilterCategory): boolean {
-  if (filter === 'All') return true;
-  if (filter === 'Characters') return asset.category === 'Character';
-  if (filter === 'Backgrounds') return asset.category === 'Background';
-  if (filter === 'Audio') return asset.file_type === 'audio';
-  if (filter === 'Props') return asset.category === 'Prop';
-  return true;
 }
 
 // ── Store ──
@@ -79,54 +92,57 @@ function filterMatches(asset: Asset, filter: FilterCategory): boolean {
 interface AssetState {
   // State
   assets: Asset[];
+  folders: AssetFolder[];
   loading: boolean;
   uploading: boolean;
-  uploadProgress: number;
+  uploadProgress: UploadProgress | null;
   selectedAssetId: string | null;
-  filterCategory: FilterCategory;
+  searchQuery: string;
   error: string | null;
   currentProjectId: string | null;
 
-  // Computed
-  filteredAssets: () => Asset[];
-
   // Actions
   fetchAssets: (projectId: string) => Promise<void>;
-  uploadAsset: (
-    file: File,
+  uploadAssets: (
+    files: File[],
     projectId: string,
-    category: AssetCategory
+    folderId?: string | null,
   ) => Promise<void>;
   deleteAsset: (assetId: string) => Promise<void>;
-  setFilterCategory: (category: FilterCategory) => void;
+  moveAsset: (assetId: string, folderId: string | null) => Promise<void>;
+  createFolder: (
+    name: string,
+    parentId: string | null,
+  ) => Promise<AssetFolder | null>;
+  renameFolder: (folderId: string, name: string) => Promise<void>;
+  deleteFolder: (folderId: string) => Promise<void>;
   setSelectedAssetId: (id: string | null) => void;
+  setSearchQuery: (query: string) => void;
   clearError: () => void;
 }
 
 export const useAssetStore = create<AssetState>((set, get) => ({
   // Initial state
   assets: [],
+  folders: [],
   loading: false,
   uploading: false,
-  uploadProgress: 0,
+  uploadProgress: null,
   selectedAssetId: null,
-  filterCategory: 'All',
+  searchQuery: '',
   error: null,
   currentProjectId: null,
-
-  // Computed
-  filteredAssets: () => {
-    const { assets, filterCategory } = get();
-    return assets.filter((a) => filterMatches(a, filterCategory));
-  },
 
   // Actions
   fetchAssets: async (projectId) => {
     set({ loading: true, error: null, currentProjectId: projectId });
     try {
-      const listed = await assetRepository.listAssets(projectId);
-      const assets = listed.map((item) => listedToAsset(item, projectId));
-      set({ assets, loading: false });
+      const library = await assetRepository.listAssets(projectId);
+      set({
+        assets: library.assets.map((item) => listedToAsset(item, projectId)),
+        folders: library.folders,
+        loading: false,
+      });
     } catch (err) {
       set({
         error: err instanceof Error ? err.message : 'Failed to fetch assets',
@@ -135,45 +151,67 @@ export const useAssetStore = create<AssetState>((set, get) => ({
     }
   },
 
-  uploadAsset: async (file, projectId, category) => {
-    const validationError = validateFile(file);
-    if (validationError) {
-      set({ error: validationError });
-      return;
+  uploadAssets: async (files, projectId, folderId = null) => {
+    if (files.length === 0) return;
+
+    const failures: string[] = [];
+    const valid: File[] = [];
+    for (const file of files) {
+      const validationError = validateFile(file);
+      if (validationError) {
+        failures.push(`${file.name}: ${validationError}`);
+      } else {
+        valid.push(file);
+      }
     }
 
-    const fileType = detectFileType(file.name)!;
-
-    set({ uploading: true, uploadProgress: 0, error: null });
-
-    try {
-      const converted = fileType === 'image'
-        ? await convertToWebpIfBeneficial(file, file.name)
-        : {
-            blob: file,
-            fileName: file.name,
-            ext: getFileExtension(file.name),
-            converted: false,
-          };
-
-      set({ uploadProgress: 40 });
-
-      const uploadFile = new File([converted.blob], converted.fileName, {
-        type: converted.blob.type || file.type,
+    if (valid.length > 0) {
+      set({
+        uploading: true,
+        uploadProgress: { done: 0, total: valid.length },
+        error: null,
       });
 
-      await assetRepository.uploadAsset(projectId, uploadFile, category);
+      for (let i = 0; i < valid.length; i++) {
+        const file = valid[i];
+        try {
+          const fileType = detectFileType(file.name)!;
+          const converted =
+            fileType === 'image'
+              ? await convertToWebpIfBeneficial(file, file.name)
+              : {
+                  blob: file as Blob,
+                  fileName: file.name,
+                  ext: getFileExtension(file.name),
+                  converted: false,
+                };
 
-      set({ uploadProgress: 100 });
+          const uploadFile = new File([converted.blob], converted.fileName, {
+            type: converted.blob.type || file.type,
+          });
+
+          await assetRepository.uploadAsset(projectId, uploadFile, folderId);
+        } catch (err) {
+          failures.push(
+            `${file.name}: ${err instanceof Error ? err.message : 'upload failed'}`,
+          );
+        }
+        set({ uploadProgress: { done: i + 1, total: valid.length } });
+      }
 
       await get().fetchAssets(projectId);
-    } catch (err) {
-      set({
-        error: err instanceof Error ? err.message : 'Upload failed',
-      });
-    } finally {
-      set({ uploading: false, uploadProgress: 0 });
     }
+
+    set({
+      uploading: false,
+      uploadProgress: null,
+      error:
+        failures.length === 0
+          ? null
+          : failures.length === 1
+            ? `Upload failed — ${failures[0]}`
+            : `${failures.length} files failed — ${failures.join('; ')}`,
+    });
   },
 
   deleteAsset: async (assetId) => {
@@ -198,7 +236,79 @@ export const useAssetStore = create<AssetState>((set, get) => ({
     }
   },
 
-  setFilterCategory: (category) => set({ filterCategory: category }),
+  moveAsset: async (assetId, folderId) => {
+    const { currentProjectId } = get();
+    if (!currentProjectId) return;
+
+    try {
+      await assetRepository.moveAsset(currentProjectId, assetId, folderId);
+      set({
+        assets: get().assets.map((a) =>
+          a.id === assetId ? { ...a, folder_id: folderId } : a,
+        ),
+      });
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Move failed',
+      });
+    }
+  },
+
+  createFolder: async (name, parentId) => {
+    const { currentProjectId } = get();
+    if (!currentProjectId) return null;
+
+    try {
+      const folder = await assetRepository.createFolder(
+        currentProjectId,
+        name,
+        parentId,
+      );
+      set({ folders: [...get().folders, folder] });
+      return folder;
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Failed to create folder',
+      });
+      return null;
+    }
+  },
+
+  renameFolder: async (folderId, name) => {
+    const { currentProjectId } = get();
+    const trimmed = name.trim();
+    if (!currentProjectId || !trimmed) return;
+
+    try {
+      await assetRepository.renameFolder(currentProjectId, folderId, trimmed);
+      set({
+        folders: get().folders.map((f) =>
+          f.id === folderId ? { ...f, name: trimmed } : f,
+        ),
+      });
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Failed to rename folder',
+      });
+    }
+  },
+
+  deleteFolder: async (folderId) => {
+    const { currentProjectId } = get();
+    if (!currentProjectId) return;
+
+    try {
+      await assetRepository.deleteFolder(currentProjectId, folderId);
+      // Contents are reparented on disk; refetch to pick up the new layout.
+      await get().fetchAssets(currentProjectId);
+    } catch (err) {
+      set({
+        error: err instanceof Error ? err.message : 'Failed to delete folder',
+      });
+    }
+  },
+
   setSelectedAssetId: (id) => set({ selectedAssetId: id }),
+  setSearchQuery: (query) => set({ searchQuery: query }),
   clearError: () => set({ error: null }),
 }));

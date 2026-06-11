@@ -3,7 +3,6 @@ import type { Node } from '@xyflow/react';
 import { assetRepository, projectRepository } from '../storage';
 import type { GraphData } from '../storage';
 import { detectFileType, getFileExtension } from '../stores/assetStore';
-import type { AssetCategory, AssetFileType } from '../stores/assetStore';
 import { convertToWebpIfBeneficial } from './imageConversion';
 
 interface GameData {
@@ -92,11 +91,9 @@ export async function importProjectFromZip(
       type: converted.blob.type || 'application/octet-stream',
     });
 
-    const category = defaultCategory(fileType);
     const newAssetId = await assetRepository.uploadAsset(
       projectId,
       uploadFile,
-      category,
     );
     idMap[oldAssetId] = newAssetId;
   }
@@ -147,10 +144,6 @@ function decodeHtmlEntities(str: string): string {
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"');
-}
-
-function defaultCategory(fileType: AssetFileType): AssetCategory {
-  return fileType === 'image' ? 'Background' : 'BGM';
 }
 
 function remapAssetIds(

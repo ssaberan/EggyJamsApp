@@ -24,7 +24,7 @@ import type {
 } from '../../../stores/graphStore';
 import { interpolateTransform, interpolateVolume } from '../../../utils/cutsceneInterpolation';
 import AssetPicker from '../AssetPicker';
-import type { AssetCategory } from '../../../stores/assetStore';
+import type { AssetFileType } from '../../../stores/assetStore';
 import { useDebouncedHistory } from '../../../utils/undoHistory';
 import KeyframeEditor from './KeyframeEditor';
 
@@ -84,10 +84,16 @@ const TRACK_ICONS: Record<CutsceneTrackType, React.ComponentType<{ className?: s
   text: Type,
 };
 
-const TRACK_ASSET_CATEGORY: Partial<Record<CutsceneTrackType, AssetCategory>> = {
-  background: 'Background',
-  character: 'Character',
-  audio: 'BGM',
+const TRACK_ASSET_KIND: Partial<Record<CutsceneTrackType, AssetFileType>> = {
+  background: 'image',
+  character: 'image',
+  audio: 'audio',
+};
+
+const TRACK_ASSET_LABEL: Partial<Record<CutsceneTrackType, string>> = {
+  background: 'background',
+  character: 'sprite',
+  audio: 'audio track',
 };
 
 const EMPTY_KFS: Keyframe[] = [];
@@ -115,7 +121,7 @@ export default function ClipProperties({
     [clip.id, cutsceneData.duration, onUpdateClip, debouncedHistory],
   );
 
-  const assetCategory = TRACK_ASSET_CATEGORY[track.type];
+  const assetKind = TRACK_ASSET_KIND[track.type];
 
   // ── Transform keyframe helpers ──
   const transform = clip.transform;
@@ -189,11 +195,12 @@ export default function ClipProperties({
       </div>
 
       {/* Asset picker (for bg, character, audio) */}
-      {assetCategory && (
+      {assetKind && (
         <div className="space-y-1.5">
           <SectionLabel>Asset</SectionLabel>
           <AssetPicker
-            category={assetCategory}
+            kind={assetKind}
+            assetLabel={TRACK_ASSET_LABEL[track.type]}
             value={clip.assetId ?? null}
             onChange={(assetId) => onUpdateClip(clip.id, { assetId })}
             compact

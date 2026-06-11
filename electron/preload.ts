@@ -3,7 +3,8 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { UploadAssetPayload } from './storage'
 import type {
   AppPreferences,
-  ListedAsset,
+  AssetFolder,
+  AssetLibrary,
   ProjectData,
   ProjectMeta,
   ProjectRegistryEntry,
@@ -87,7 +88,7 @@ const electronAPI = {
   saveProjectThumbnail: (projectId: string, buffer: ArrayBuffer): Promise<string> =>
     ipcRenderer.invoke('project:saveThumbnail', projectId, buffer),
 
-  listAssets: (projectId: string): Promise<ListedAsset[]> =>
+  listAssets: (projectId: string): Promise<AssetLibrary> =>
     ipcRenderer.invoke('asset:list', projectId),
 
   uploadAsset: (payload: UploadAssetPayload): Promise<string> =>
@@ -95,6 +96,30 @@ const electronAPI = {
 
   deleteAsset: (projectId: string, assetId: string): Promise<void> =>
     ipcRenderer.invoke('asset:delete', projectId, assetId),
+
+  moveAsset: (
+    projectId: string,
+    assetId: string,
+    folderId: string | null,
+  ): Promise<void> =>
+    ipcRenderer.invoke('asset:move', projectId, assetId, folderId),
+
+  createAssetFolder: (
+    projectId: string,
+    name: string,
+    parentId: string | null,
+  ): Promise<AssetFolder> =>
+    ipcRenderer.invoke('asset:createFolder', projectId, name, parentId),
+
+  renameAssetFolder: (
+    projectId: string,
+    folderId: string,
+    name: string,
+  ): Promise<void> =>
+    ipcRenderer.invoke('asset:renameFolder', projectId, folderId, name),
+
+  deleteAssetFolder: (projectId: string, folderId: string): Promise<void> =>
+    ipcRenderer.invoke('asset:deleteFolder', projectId, folderId),
 
   getAssetUrl: (projectId: string, assetId: string): Promise<string> =>
     ipcRenderer.invoke('asset:getUrl', projectId, assetId),

@@ -1,8 +1,9 @@
 export type {
   AppPreferences,
   AppTheme,
-  AssetCategory,
   AssetFileType,
+  AssetFolder,
+  AssetLibrary,
   AssetManifest,
   AssetRecord,
   GameVariables,
@@ -52,6 +53,10 @@ const stubAssetRepository: AssetRepository = {
   listAssets: () => notImplemented(),
   uploadAsset: () => notImplemented() as Promise<string>,
   deleteAsset: () => notImplemented(),
+  moveAsset: () => notImplemented(),
+  createFolder: () => notImplemented(),
+  renameFolder: () => notImplemented(),
+  deleteFolder: () => notImplemented(),
   getAssetUrl: () => notImplemented(),
 };
 

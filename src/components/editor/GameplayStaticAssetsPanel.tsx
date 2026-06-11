@@ -192,7 +192,8 @@ export default function GameplayStaticAssetsPanel({ nodeId, showCharacterZIndex 
         <div className="mb-2">
           <AssetPicker
             label="Select prop to add"
-            category="Prop"
+            kind="image"
+            assetLabel="prop"
             value={null}
             onChange={addStaticAsset}
           />
@@ -247,7 +248,8 @@ export default function GameplayStaticAssetsPanel({ nodeId, showCharacterZIndex 
           {/* Asset picker to change the image */}
           <AssetPicker
             label="Image"
-            category="Prop"
+            kind="image"
+            assetLabel="prop"
             value={selectedAsset.assetId}
             onChange={(assetId) => {
               if (assetId) updateStaticAsset(selectedAsset.id, { assetId });

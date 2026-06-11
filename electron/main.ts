@@ -597,6 +597,26 @@ function registerIpcHandlers(): void {
       storage.deleteAsset(projectId, assetId),
   )
   ipcMain.handle(
+    'asset:move',
+    (_event, projectId: string, assetId: string, folderId: string | null) =>
+      storage.moveAsset(projectId, assetId, folderId),
+  )
+  ipcMain.handle(
+    'asset:createFolder',
+    (_event, projectId: string, name: string, parentId: string | null) =>
+      storage.createAssetFolder(projectId, name, parentId),
+  )
+  ipcMain.handle(
+    'asset:renameFolder',
+    (_event, projectId: string, folderId: string, name: string) =>
+      storage.renameAssetFolder(projectId, folderId, name),
+  )
+  ipcMain.handle(
+    'asset:deleteFolder',
+    (_event, projectId: string, folderId: string) =>
+      storage.deleteAssetFolder(projectId, folderId),
+  )
+  ipcMain.handle(
     'asset:getUrl',
     (_event, projectId: string, assetId: string) =>
       storage.getAssetUrl(projectId, assetId),

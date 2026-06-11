@@ -51,7 +51,7 @@ import { WHACK_A_MOLE_SCRIPT } from '../constants/whackAMoleScript';
 import TimerPanel from '../components/editor/TimerPanel';
 import { useStore } from 'zustand';
 import { useGraphStore, getActiveGraph, resolveSubgraphNode, type SceneType, type SceneNodeData } from '../stores/graphStore';
-import { useAssetStore } from '../stores/assetStore';
+import { useAssetStore, getFolderPath } from '../stores/assetStore';
 import ThemeToggle from '../components/ThemeToggle';
 
 const sidebarItems = [
@@ -139,6 +139,7 @@ export default function EditorLayout() {
   const cancelBulkMove = useGraphStore((s) => s.cancelBulkMove);
   const executeBulkMove = useGraphStore((s) => s.executeBulkMove);
   const assets = useAssetStore((s) => s.assets);
+  const assetFolders = useAssetStore((s) => s.folders);
   const activeGraph = useMemo(
     () => getActiveGraph(nodes, edges, subgraphPath),
     [nodes, edges, subgraphPath],
@@ -171,11 +172,12 @@ export default function EditorLayout() {
         '',
         'Use `api.getAssetUrl(assetId)` with these IDs to load images or audio:',
         '',
-        '| ID | Filename | Type | Category |',
-        '|----|----------|------|----------|'
+        '| ID | Filename | Type | Folder |',
+        '|----|----------|------|--------|'
       );
       for (const a of assets) {
-        lines.push(`| ${a.id} | ${a.file_name} | ${a.file_type} | ${a.category} |`);
+        const folder = getFolderPath(assetFolders, a.folder_id) || '—';
+        lines.push(`| ${a.id} | ${a.file_name} | ${a.file_type} | ${folder} |`);
       }
       lines.push('');
     }
@@ -232,7 +234,7 @@ export default function EditorLayout() {
     );
 
     return lines.join('\n');
-  }, [assets, variables, editingNode]);
+  }, [assets, assetFolders, variables, editingNode]);
 
   // ── Undo / Redo reactive state ──
   const canUndo = useStore(useGraphStore.temporal, (s) => s.pastStates.length > 0);

@@ -1,7 +1,7 @@
 import type {
   AppPreferences,
-  AssetCategory,
-  ListedAsset,
+  AssetFolder,
+  AssetLibrary,
   ProjectData,
   ProjectMeta,
   ProjectRegistryEntry,
@@ -12,7 +12,7 @@ import type {
 export interface UploadAssetIpcPayload {
   projectId: string;
   fileName: string;
-  category: AssetCategory;
+  folderId: string | null;
   buffer: ArrayBuffer;
 }
 
@@ -72,9 +72,25 @@ export interface ElectronAPI {
   getProjectThumbnailUrl(projectId: string): Promise<string | null>;
   saveProjectThumbnail(projectId: string, buffer: ArrayBuffer): Promise<string>;
 
-  listAssets(projectId: string): Promise<ListedAsset[]>;
+  listAssets(projectId: string): Promise<AssetLibrary>;
   uploadAsset(payload: UploadAssetIpcPayload): Promise<string>;
   deleteAsset(projectId: string, assetId: string): Promise<void>;
+  moveAsset(
+    projectId: string,
+    assetId: string,
+    folderId: string | null,
+  ): Promise<void>;
+  createAssetFolder(
+    projectId: string,
+    name: string,
+    parentId: string | null,
+  ): Promise<AssetFolder>;
+  renameAssetFolder(
+    projectId: string,
+    folderId: string,
+    name: string,
+  ): Promise<void>;
+  deleteAssetFolder(projectId: string, folderId: string): Promise<void>;
   getAssetUrl(projectId: string, assetId: string): Promise<string>;
 
   listSlots(projectId: string): Promise<SaveSlotMeta[]>;

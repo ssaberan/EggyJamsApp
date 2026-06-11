@@ -32,7 +32,7 @@ export async function assembleOfflineGame(
 
   const { nodes, edges, variables, startNodeId } = useGraphStore.getState();
 
-  const assetList = await assetRepository.listAssets(projectId);
+  const { assets: assetList } = await assetRepository.listAssets(projectId);
 
   const localAssetMap: Record<string, string> = {};
   const assetFiles: OfflineGameFile[] = [];

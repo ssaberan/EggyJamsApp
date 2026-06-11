@@ -40,7 +40,8 @@ export default function SceneSettingsPanel({ node }: SceneSettingsPanelProps) {
       {/* ── Background Selector ── */}
       <AssetPicker
         label="Background"
-        category="Background"
+        kind="image"
+        assetLabel="background"
         value={backgroundImageId}
         onChange={(assetId) => updateNodeData(node.id, { backgroundImageId: assetId })}
       />
@@ -115,7 +116,8 @@ export default function SceneSettingsPanel({ node }: SceneSettingsPanelProps) {
       {/* ── Music Selector ── */}
       <AssetPicker
         label="Background Music"
-        category="BGM"
+        kind="audio"
+        assetLabel="music track"
         value={backgroundMusicId}
         onChange={(assetId) => updateNodeData(node.id, { backgroundMusicId: assetId })}
       />

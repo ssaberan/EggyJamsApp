@@ -196,7 +196,8 @@ export default function GameplaySettingsPanel({ nodeId }: GameplaySettingsPanelP
       {/* Background */}
       <AssetPicker
         label="Background"
-        category="Background"
+        kind="image"
+        assetLabel="background"
         value={settings.backgroundImageId}
         onChange={(assetId) => updateGameplaySettings(nodeId, { backgroundImageId: assetId })}
       />
@@ -252,7 +253,8 @@ export default function GameplaySettingsPanel({ nodeId }: GameplaySettingsPanelP
       {/* Background Music */}
       <AssetPicker
         label="Background Music"
-        category="BGM"
+        kind="audio"
+        assetLabel="music track"
         value={settings.backgroundMusicId}
         onChange={(assetId) => updateGameplaySettings(nodeId, { backgroundMusicId: assetId })}
       />
@@ -262,25 +264,29 @@ export default function GameplaySettingsPanel({ nodeId }: GameplaySettingsPanelP
         <>
           <AssetPicker
             label="Character Sprite (idle)"
-            category="Character"
+            kind="image"
+            assetLabel="sprite"
             value={settings.characterSpriteIdIdleSide ?? null}
             onChange={(assetId) => updateGameplaySettings(nodeId, { characterSpriteIdIdleSide: assetId })}
           />
           <AssetPicker
             label="Character Sprite (walking)"
-            category="Character"
+            kind="image"
+            assetLabel="sprite"
             value={settings.characterSpriteIdWalkingSide ?? null}
             onChange={(assetId) => updateGameplaySettings(nodeId, { characterSpriteIdWalkingSide: assetId })}
           />
           <AssetPicker
             label="Character Sprite (jumping up)"
-            category="Character"
+            kind="image"
+            assetLabel="sprite"
             value={settings.characterSpriteIdJumpingUpSide ?? null}
             onChange={(assetId) => updateGameplaySettings(nodeId, { characterSpriteIdJumpingUpSide: assetId })}
           />
           <AssetPicker
             label="Character Sprite (falling down)"
-            category="Character"
+            kind="image"
+            assetLabel="sprite"
             value={settings.characterSpriteIdFallingDownSide ?? null}
             onChange={(assetId) => updateGameplaySettings(nodeId, { characterSpriteIdFallingDownSide: assetId })}
           />
@@ -289,25 +295,29 @@ export default function GameplaySettingsPanel({ nodeId }: GameplaySettingsPanelP
         <>
           <AssetPicker
             label="Character Sprite — Idle (horizontal)"
-            category="Character"
+            kind="image"
+            assetLabel="sprite"
             value={settings.characterSpriteIdIdleHorizontal ?? null}
             onChange={(assetId) => updateGameplaySettings(nodeId, { characterSpriteIdIdleHorizontal: assetId })}
           />
           <AssetPicker
             label="Character Sprite — Walking (horizontal)"
-            category="Character"
+            kind="image"
+            assetLabel="sprite"
             value={settings.characterSpriteIdWalkingHorizontal ?? null}
             onChange={(assetId) => updateGameplaySettings(nodeId, { characterSpriteIdWalkingHorizontal: assetId })}
           />
           <AssetPicker
             label="Character Sprite — Idle (vertical)"
-            category="Character"
+            kind="image"
+            assetLabel="sprite"
             value={settings.characterSpriteIdIdleVertical ?? null}
             onChange={(assetId) => updateGameplaySettings(nodeId, { characterSpriteIdIdleVertical: assetId })}
           />
           <AssetPicker
             label="Character Sprite — Walking (vertical)"
-            category="Character"
+            kind="image"
+            assetLabel="sprite"
             value={settings.characterSpriteIdWalkingVertical ?? null}
             onChange={(assetId) => updateGameplaySettings(nodeId, { characterSpriteIdWalkingVertical: assetId })}
           />
