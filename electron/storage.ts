@@ -250,7 +250,10 @@ export async function listProjects(): Promise<ProjectMeta[]> {
     try {
       const data = await readProjectData(entry.path)
       metas.push({
-        id: data.id,
+        // Use the registry id as the canonical key: project.json may be
+        // missing or stale (readProjectData falls back to id: ''), and all
+        // IPC operations (open/delete) resolve projects via the registry.
+        id: entry.id,
         title: data.title,
         description: data.description,
         thumbnailPath: data.thumbnailPath,
